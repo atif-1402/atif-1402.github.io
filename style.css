@@ -1,0 +1,183 @@
+:root {
+  --bg: #0b0e14;
+  --fg: #c0caf5;
+  --dim: #565f89;
+  --accent: #7aa2f7;
+}
+
+/* Nerd Font */
+@font-face {
+  font-family: "JetBrainsMonoNerd";
+  src: url("./fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html { font-size: 14px; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "JetBrainsMonoNerd", monospace;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.terminal {
+  max-width: 720px;
+  padding: 48px 24px;
+  margin-left: 60px;
+  line-height: 1.7;
+}
+
+/* Text */
+.line {
+  margin: 0;
+}
+
+.name {
+  color: var(--accent);
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.value {
+  color: var(--fg);
+}
+
+/* Section header */
+.section {
+  font-weight: 1000;
+  color: var(--fg);
+}
+
+/* Cursor */
+.cursor {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--accent);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Spacing utilities (per-line control) */
+.mb-4  { margin-bottom: 4px; }
+.mb-8  { margin-bottom: 2px; }
+.mb-7  { margin-bottom: -10px; }
+.mb-12 { margin-bottom: 4px; }
+.mb-16 { margin-bottom: 13px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-25 { margin-bottom: -30px; }
+.mb-30 { margin-bottom: 28px; }
+.mb-31 { margin-bottom: 9px; }
+.mb-32 { margin-bottom: 20px; }
+.mb-sep { margin-bottom: 12px; }
+
+/* Mobile */
+@media (max-width: 600px) {
+  .terminal {
+    margin-left: 0;
+    padding: 32px 16px;
+    font-size: 14px;
+  }
+}
+
+.lang {
+  color: var(--fg);
+}
+
+.status {
+  margin-left: 6px;
+  color: var(--dim);
+  font-size: 0.95em;
+}
+
+.learning {
+  opacity: 0.85;
+}
+
+.icon {
+  color: var(--fg);
+  display: inline-block;
+  font-size: 1.4em;   /* increase icon size */
+  margin-right: 1px;
+  vertical-align: middle;
+}
+
+.hash-link {
+  color: white;
+  text-decoration: none;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.hash-link:hover .hash {
+  margin-right: 2px;
+  color: var(--dim);
+  opacity: 0.8;
+  transition: all 150ms ease-in-out;
+}
+
+.project-name {
+  color: var(--fg);
+  margin-right: 6px;
+}
+
+.desc {
+  color: var(--dim);
+  font-size: 0.95em;
+}
+
+.socials {
+  display: flex;
+  gap: 20px;
+  font-size: 2.4em; /* increase icon size */
+  transition: all 150ms ease-in-out;
+}
+
+.socials a {
+  font-weight: 500;
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  transition: all 150ms ease-in-out;
+}
+
+.socials a:hover {
+  font-size: 1.04em;
+  color: var(--fg);
+  transition: all 150ms ease-in-out;
+}
+
+.sep {
+  color: var(--dim);
+  font-size: 0.95em;
+  user-select: none;
+  transition: all 150ms ease-in-out;
+}
+
+#dust {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.terminal {
+  position: relative;
+  z-index: 1;
+}
