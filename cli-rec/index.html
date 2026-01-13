@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <meta charset="UTF-8">
+  <title>anom-dots</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+<canvas id="dust"></canvas>
+
+<!-- ===== TERMINAL (TEXT) ===== -->
+<div class="terminal">
+
+  <h1 class="line mb-25">
+    tui<span class="name">-screenrec</span><span class="cursor">|</span>
+  </h1>
+
+  <p class="sep mb-sep">──────────</p>
+
+  <p class="line mb-24 dim">
+    This is a Wayland-native screen recording script built around wf-recorder, designed to provide a simple TUI-based workflow instead of keybind-only recording.
+  </p>
+
+  <h3 class="section mb-12"><ins>Det</ins>ails </h3>
+
+  <table class="dot-table">
+    <tr><td class="key">→</td><td class="sep"></td><td class="val">Record your entire screen, a specific monitor, or a selected region</td></tr>
+    <tr><td class="key">→</td><td class="sep"></td><td class="val">Optionally record system audio and/or microphone audio</td></tr>
+    <tr><td class="key">→</td><td class="sep"></td><td class="val">Control recording through an interactive menu</td></tr>
+    <tr><td class="key">→</td><td class="sep"></td><td class="val">Stop an ongoing recording using a floating TUI menu, without rerunning commands manually</td></tr>
+    <tr><td class="key">→</td><td class="sep"></td><td class="val">Automatically manage output directories and recording processes</td></tr>
+  </table>
+  <!-- <h3 class="section mb-12"><ins>Sho</ins>wcase </h3> -->
+
+</div>
+<!-- ===== END TERMINAL ===== -->
+
+
+<!-- ===== FULL-WIDTH SHOWCASE ===== -->
+<!-- <div class="showcase-wide"> -->
+  <!-- <div class="showcase-grid"> -->
+<!--  -->
+    <!-- <div class="shot"> -->
+      <!-- <div class="shot-title">Desktop</div> -->
+      <!-- <img src="https://i.ibb.co/Q7BtKKJz/rec-2026-01-14-02-39-01.gif"> -->
+    <!-- </div> -->
+<!--  -->
+  <!-- </div> -->
+<!-- </div> -->
+<!-- ===== END SHOWCASE ===== -->
+
+
+<!-- ===== BACK TO TERMINAL ===== -->
+<div class="terminal">
+
+  <h3 class="section mb-dep"><ins>Dep</ins>endencies </h3>
+  <table class="dot-table">
+    <tr><td class="key">bash</td><td class="sep">:</td><td class="sep">Script runtime</td></tr>
+    <tr><td class="key">wf-recorder</td><td class="sep">:</td><td class="sep">Core screen recording tool (Wayland)</td></tr>
+    <tr><td class="key">fzf</td><td class="sep">:</td><td class="sep">Interactive TUI menus</td></tr>
+    <tr><td class="key">slurp</td><td class="sep">:</td><td class="sep">Region selection on Wayland</td></tr>
+    <tr><td class="key">libnotify</td><td class="sep">:</td><td class="sep">Desktop notifications</td></tr>
+    <tr><td class="key">Required One</td><td class="sep">:</td><td class="sep">Desktop notifications</td></tr>
+    <tr><td class="key">Required One</td><td class="sep">:</td><td class="sep">Desktop notifications</td></tr>
+    <tr><td class="key">Required One</td><td class="sep">:</td><td class="sep">pipewire, wireplumber, pipewire-pulse</td></tr>
+  </table>
+
+    <h3 class="section mb-dep1"><ins>Dep</ins>endencies Install </h3>
+  <table class="dot-table">
+    <tr><td class="key">pacman</td><td class="sep">:</td><td class="sep">sudo pacman -S --needed wf-recorder fzf slurp libnotify</td></tr>
+    <tr><td class="key">yay</td><td class="sep">:</td><td class="sep">yay -S wf-recorder fzf slurp libnotify</td></tr>
+  </table>
+
+</div>
+
+<!-- ===== LINKS ===== -->
+<div class="terminal">
+
+  <h3 class="section mb-link1"><ins>Lin</ins>ks </h3>
+
+<p class="line mb-8">
+  <a class="hash-link" href="https://github.com/atif-1402/tui-screen-recorder" target="_blank">
+    <span class="hash"><ins>#</ins></span>
+  </a>
+  <span class="project-name">Repo:</span>
+  <span class="desc"><i>screenrec.sh</i> </span>
+</p>
+
+<p class="line mb-26">
+  <a class="hash-link" href="https://atif-1402.github.io/">
+    <span class="hash"> Back</span>
+  </a>
+  <span class="project-name">Home Page</span>
+  <span class="desc"><i></i></span>
+</p>
+
+<!-- Footer -->
+
+<p class="line dim mb-11">last updated: jan 2026</p>
+
+<p class="line dim mb-12">Made with  by  and 󰚩</p>
+
+</div>
+<script src="./dust.js"></script>
+</body>
+</html>
