@@ -1,3 +1,8 @@
+if (window.innerWidth < 768) {
+  canvas.remove();
+  throw new Error("dust disabled on mobile");
+}
+
 const canvas = document.getElementById("dust");
 const ctx = canvas.getContext("2d");
 
