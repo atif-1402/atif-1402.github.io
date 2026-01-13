@@ -80,6 +80,7 @@ body {
 .mb-7  { margin-bottom: -10px; }
 .mb-11 { margin-top: 80px; }
 .mb-12 { margin-bottom: 4px; }
+.mb-link1 { margin-top: -78px; }
 .mb-16 { margin-bottom: 13px; }
 .mb-24 { margin-bottom: 24px; }
 .mb-25 { margin-bottom: -30px; }
@@ -181,4 +182,47 @@ body {
 .terminal {
   position: relative;
   z-index: 1;
+}
+
+.showcase-wide {
+  margin-left: 60px;              /* align with terminal */
+  padding-right: 40px;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.shot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shot-title {
+  color: var(--accent);
+  font-size: 0.9em;
+}
+
+.shot img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid alpha(var(--dim), 0.35);
+}
+
+.shot.wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 700px) {
+  .showcase-wide {
+    margin-left: 0;
+    padding-right: 0;
+  }
+
+  .shot.wide {
+    grid-column: span 1;
+  }
 }
