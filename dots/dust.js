@@ -6,7 +6,7 @@ if (window.innerWidth < 768) {
 const canvas = document.getElementById("dust");
 const ctx = canvas.getContext("2d");
 
-const glyph = "+";
+const glyph = ".";
 const spacing = 56;
 const fontSize = 16;
 const maxInfluence = 180;
