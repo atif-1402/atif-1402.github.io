@@ -30,7 +30,7 @@ glyphCanvas.width = gw;
 glyphCanvas.height = gh;
 
 gctx.font = `${fontSize}px JetBrainsMonoNerd`;
-gctx.fillStyle = "rgba(122,162,247,0.14)";
+gctx.fillStyle = "rgba(122,162,247,0.08)";
 gctx.textAlign = "center";
 gctx.textBaseline = "middle";
 gctx.fillText(glyph, gw / 2, gh / 2);
@@ -65,8 +65,8 @@ window.addEventListener("mouseleave", () => {
 function draw() {
   ctx.clearRect(0, 0, width, height);
 
-  for (let y = spacing / 2; y <= height; y += spacing) {
-    for (let x = spacing / 2; x <= width; x += spacing) {
+  for (let y = spacing / 4; y <= height; y += spacing) {
+    for (let x = spacing / 4; x <= width; x += spacing) {
 
       const dx = mouse.x - x;
       const dy = mouse.y - y;
