@@ -1,8 +1,8 @@
 :root {
-  --bg: #0b0e14;
-  --fg: #c0caf5;
-  --dim: #565f89;
-  --accent: #7aa2f7;
+  --bg: #0a0c10;     
+  --fg: #a3aac2;      
+  --dim: #6b718a;     
+  --accent: #7b8fc7;  
 }
 
 /* Nerd Font */
@@ -160,7 +160,7 @@ body {
 }
 
 .socials a:hover {
-  font-size: 1.04em;
+  font-size: 1em;
   color: var(--fg);
   transition: all 150ms ease-in-out;
 }
@@ -225,4 +225,9 @@ body {
   .shot.wide {
     grid-column: span 1;
   }
+}
+
+::selection {
+  background: var(--dim); /* selection background */
+  color: #0b0e14;      /* selected text color */
 }
