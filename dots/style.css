@@ -1,8 +1,8 @@
 :root {
-  --bg: #0a0c10;     
-  --fg: #a3aac2;      
-  --dim: #6b718a;     
-  --accent: #7b8fc7;  
+  --bg: #2f3337;
+  --fg: #d8dce1;
+  --dim: #a5abb2;
+  --accent: #bcc3cd;
 }
 
 /* Nerd Font */
@@ -30,6 +30,10 @@ html, body {
 
 body {
   min-height: 100vh;
+}
+
+body {
+  filter: brightness(0.46) contrast(0.95);
 }
 
 ::selection {
@@ -216,6 +220,7 @@ body {
   width: 100%;
   border-radius: 8px;
   border: 1px solid alpha(var(--dim), 0.35);
+  filter: brightness(1.46) contrast(1);
 }
 
 .shot.wide {
