@@ -164,10 +164,10 @@ body {
 }
 
 .socials a:hover {
-  filter: brightness(1.96) contrast(0.95);
-  font-size: 1em;
+  filter: brightness(2.96) contrast(2.95);
+  font-size: 1.em;
   color: var(--fg);
-  transition: all 150ms ease-in-out;
+  transition: all 650ms ease-in-out;
 }
 
 .sep {
