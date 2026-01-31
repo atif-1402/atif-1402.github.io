@@ -1,8 +1,8 @@
 :root {
-  --bg: #2f3337;
-  --fg: #d8dce1;
-  --dim: #a5abb2;
-  --accent: #bcc3cd;
+  --bg:     #11100e;
+  --fg:     #e2ddd7;
+  --dim:    #9a958e;
+  --accent: #c38f5f;
 }
 
 /* Nerd Font */
@@ -33,7 +33,7 @@ body {
 }
 
 body {
-  filter: brightness(0.46) contrast(0.95);
+  filter: brightness(0.6) contrast(0.95);
 }
 
 .terminal {
@@ -49,7 +49,7 @@ body {
 }
 
 .name {
-  color: var(--accent);
+  color: var(--dim);
 }
 
 .dim {
@@ -70,7 +70,7 @@ body {
 .cursor {
   display: inline-block;
   margin-top: 8px;
-  color: var(--accent);
+  color: var(--dim);
   animation: blink 1.1s steps(1) infinite;
 }
 
