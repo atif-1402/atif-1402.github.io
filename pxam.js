@@ -1,0 +1,70 @@
+const canvas = document.getElementById("pxam");
+const ctx = canvas.getContext("2d");
+
+// pixel block size
+const PIXEL = 18;
+
+// motion tuning
+const DRIFT = 0.0006;   // horizontal movement
+const BREATH = 0.00025; // vertical breathing
+
+let cols, rows;
+let t = 0;
+let p = 0;
+
+function resize() {
+  cols = Math.floor(window.innerWidth / PIXEL);
+  rows = Math.floor(window.innerHeight / PIXEL);
+
+  canvas.width = cols;
+  canvas.height = rows;
+
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+// Kanagawa-inspired layered wave
+function waveHeight(x, layer) {
+  return (
+    Math.sin((x + p) * 0.18 + layer) * 4 +
+    Math.sin((x + p) * 0.05) * 6 +
+    rows * (0.68 + layer * 0.06) +
+    Math.sin(t * 0.6) * 2
+  );
+}
+
+function loop() {
+  ctx.clearRect(0, 0, cols, rows);
+
+  // slow drift + breath
+  p += DRIFT;
+  t += BREATH;
+
+  for (let layer = 0; layer < 3; layer++) {
+    for (let x = 0; x < cols; x++) {
+      const h = waveHeight(x, layer);
+
+      // wave body
+      for (let y = h; y < rows; y++) {
+        let alpha = 0.03;
+        if (layer === 1) alpha = 0.026;
+        if (layer === 2) alpha = 0.022;
+
+        ctx.fillStyle = `rgba(55, 55, 55, ${alpha})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+
+      // soft foam crest
+      const fy = Math.floor(h);
+      ctx.fillStyle = "rgba(95, 95, 95, 0.03)";
+      ctx.fillRect(x, fy - 1, 1, 1);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
