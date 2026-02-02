@@ -107,6 +107,8 @@ body {
 .mb-link1 { margin-top: -78px; }
 .mb-16 { margin-bottom: 13px; }
 .mb-24 { margin-bottom: 24px; }
+.mb-cf { margin-top: -20px;
+         margin-bottom: 24px; }
 .mb-25 { margin-bottom: -30px;
          margin-top: -25px;    }
 .mb-30 { margin-bottom: 28px; }
