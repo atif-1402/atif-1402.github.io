@@ -146,7 +146,7 @@ body {
   margin-right: 1px;
   vertical-align: middle;
 }
-
+.hash1-link,
 .hash-link {
   color: white;
   text-decoration: none;
@@ -156,6 +156,19 @@ body {
 
 .hash-link:hover .hash {
   margin-right: 2px;
+  color: var(--dim);
+  opacity: 0.8;
+  transition: all 150ms ease-in-out;
+}
+
+.hash1-link {
+  color: var(--dim);
+  text-decoration: none;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.hash1-link:hover .hash1 {
   color: var(--dim);
   opacity: 0.8;
   transition: all 150ms ease-in-out;
