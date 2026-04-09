@@ -13,11 +13,11 @@
 }
 
 :root {
-  --bg: #0a0a0a;
-  --fg: #ddd8cc;
-  --muted: #484844;
-  --dim: #2a2a27;
-  --accent: #a8e063;
+--bg: #0c110e;
+--fg: #d4e8cc;
+--muted: #243428;
+--dim: #141c18;
+--accent: #a8cc98;
   --font: 'JetBrainsNerd', monospace;
 }
 
