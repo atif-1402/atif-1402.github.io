@@ -286,6 +286,11 @@ body {
   animation: fade-up 0.5s ease 0.7s forwards;
 }
 
+::selection {
+  background-color: var(--muted);
+  color: var(--fg);            
+}
+
 /* animation */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
