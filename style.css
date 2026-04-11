@@ -215,7 +215,7 @@ body {
   position: relative;
 }
 
-.project::before {
+/* .project::before {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
@@ -226,7 +226,7 @@ body {
   z-index: 0;
 }
 
-.project:hover::before { width: 100%; }
+.project:hover::before { width: 100%; } */
 .project:first-child { border-top: 0.5px solid var(--dim); }
 
 .proj-left {
@@ -289,6 +289,25 @@ body {
 ::selection {
   background-color: var(--muted);
   color: var(--fg);            
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
 }
 
 /* animation */
