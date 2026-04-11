@@ -123,7 +123,7 @@ body {
 .divider {
   border: none;
   border-top: 0.5px solid var(--dim);
-  margin: 36px 0;
+  margin: 36px 0px;
   opacity: 0;
   animation: fade-up 0.4s ease 0.3s forwards;
 }
@@ -215,6 +215,10 @@ body {
   position: relative;
 }
 
+.project:last-child {
+  border-bottom: 0px;
+}
+
 /* .project::before {
   content: '';
   position: absolute;
@@ -259,7 +263,8 @@ body {
 
 .proj-arrow {
   font-size: 11px;
-  color: var(--muted);
+  margin-right: 1px;
+  color: var(--dim);
   flex-shrink: 0;
   transition: color 0.2s, transform 0.2s;
   position: relative;
@@ -268,7 +273,6 @@ body {
 
 .project:hover .proj-arrow {
   color: var(--accent);
-  transform: translateX(2px) translateY(-2px);
 }
 
 /* footer */
