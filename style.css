@@ -119,6 +119,19 @@ body {
   animation: fade-up 0.5s ease 0.25s forwards;
 }
 
+.rmj {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 420px;
+  line-height: 1.9;
+  opacity: 0;
+  animation: fade-up 0.5s ease 0.25s forwards;
+}
+
+.rmj:hover {
+  color: var(--accent);
+}
+
 /* divider */
 .divider {
   border: none;
@@ -322,4 +335,230 @@ body {
 
 @media (max-width: 480px) {
   .page { padding: 48px 20px 72px; }
+}
+
+/* personal/style.css — timeline page */
+
+.back {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.back:hover { color: var(--accent); }
+
+/* timeline container */
+.timeline {
+  position: relative;
+  padding-left: 28px;
+  opacity: 0;
+  animation: fade-up 0.5s ease 0.35s forwards;
+}
+
+/* vertical line */
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 0;
+  width: 0.5px;
+  background: var(--dim);
+}
+
+/* year marker */
+.tl-year {
+  position: relative;
+  margin: 36px 0 20px;
+}
+
+.tl-year:first-child {
+  margin-top: 0;
+}
+
+.tl-year::before {
+  content: '';
+  position: absolute;
+  left: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 0.5px;
+  background: var(--dim);
+}
+
+.tl-year span {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* entry */
+.tl-entry {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 0.5px solid var(--dim);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.tl-entry:last-child {
+  border-bottom: none;
+}
+
+.tl-entry.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* diamond */
+.tl-dot {
+  position: absolute;
+  left: -31px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 7px;
+  height: 7px;
+  background: var(--bg);
+  border: 1px solid var(--muted);
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tl-entry:hover .tl-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tl-dot-now {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 4.5px var(--accent);
+}
+
+/* content */
+.tl-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tl-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tl-date {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* badges */
+.tl-badge {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 0.5px solid var(--dim);
+  color: var(--muted);
+}
+
+.badge-milestone {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.badge-project {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+.badge-learning {
+  color: var(--muted);
+  border-color: var(--muted);
+}
+
+.badge-note {
+  color: var(--muted);
+  border-color: var(--muted);
+}
+
+.badge-now {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* title & desc */
+.tl-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.tl-entry:hover .tl-title {
+  color: var(--accent);
+}
+
+.tl-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+/* now entry */
+.tl-now .tl-title {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* filter bar */
+.tl-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fade-up 0.5s ease 0.3s forwards;
+}
+
+.tl-filter {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border: 0.5px solid var(--dim);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.tl-filter:hover {
+  color: var(--fg);
+  border-color: var(--muted);
+}
+
+.tl-filter.active {
+  color: var(--fg);
+  border-color: var(--accent);
+  background: transparent;
+}
+
+.tl-highlights {
+  color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .timeline { padding-left: 20px; }
+  .tl-dot   { left: -23px; }
+  .tl-year::before { left: -24px; }
 }
