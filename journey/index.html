@@ -4,32 +4,33 @@
   <meta charset="UTF-8">
   <title>atif@anom — journey</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg" sizes="32x32" href="../favicon.svg">
+  <link rel="icon" type="image/svg+xml" sizes="32x32" href="../favicon.svg">
+  <meta name="theme-color" content="#18181a">
+  <script>document.documentElement.classList.add('js');</script>
   <link rel="stylesheet" href="../style.css">
-  <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="home journey">
   <div class="page">
 
     <div class="topbar">
-      <div class="prompt"> atif@anom $<span class="cursor"></span></div>
-      <div class="socials">
-        <a class="soc" href="/" title="home"></a>
-        <a class="soc" href="mailto:atifameen1402@gmail.com" title="mail">󰇮</a>
-        <a class="soc" href="https://github.com/atif-1402" target="_blank" title="github"></a>
-        <a class="soc" href="https://x.com/anom538" target="_blank" title="x"></a>
-        <a class="soc" href="https://discord.com/users/1432491302875828246" target="_blank" title="discord"></a>
-        <a class="soc" href="https://reddit.com/u/Desperate_Lion5740" target="_blank" title="reddit"></a>
-        <!-- <a class="soc" href="https://ko-fi.com/anom538" target="_blank" title="ko-fi"></a> -->
-      </div>
+      <div class="prompt">atif@anom $<span class="cursor"></span></div>
+      <nav class="links" aria-label="links">
+        <a class="lnk" href="/" title="home">home</a>
+        <a class="lnk" href="mailto:atifameen1402@gmail.com" title="mail">mail</a>
+        <a class="lnk" href="https://github.com/atif-1402" target="_blank" rel="noopener" title="github">github</a>
+        <a class="lnk" href="https://x.com/anom538" target="_blank" rel="noopener" title="x">x</a>
+        <a class="lnk" href="https://discord.com/users/1432491302875828246" target="_blank" rel="noopener" title="discord">discord</a>
+        <a class="lnk" href="https://reddit.com/u/Desperate_Lion5740" target="_blank" rel="noopener" title="reddit">reddit</a>
+        <!-- <a class="lnk" href="https://ko-fi.com/anom538" target="_blank" rel="noopener" title="ko-fi">ko-fi</a> -->
+      </nav>
     </div>
 
-    <div class="header">
+    <div class="header" data-boot>
       <h1 class="name">journey.</h1>
       <p class="bio">just a student who got lost in the wrong path and found his way back through tech.</p>
     </div>
 
-    <hr class="divider">
+    <hr class="divider" data-boot>
 
     <div class="timeline" id="timeline">
 
@@ -235,13 +236,20 @@
 
     </div>
 
-    <div class="footer">
+    <div class="footer" data-boot>
       <span>@atif-1402/@anom538</span>
-      <span>made with  by  and 󰚩</span>
       <span>Last Update:apr 2026</span>
     </div>
 
+    <div class="statusbar" role="status">
+      <span class="mode">NORMAL</span>
+      <span class="path">~/journey</span>
+      <span class="keys">j/k move · 1-5 filter</span>
+      <span class="clock js-clock">--:--:-- UTC</span>
+    </div>
+
   </div>
+  <script src="../pxam.js"></script>
   <script src="timeline.js"></script>
 </body>
 </html>
