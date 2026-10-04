@@ -244,90 +244,94 @@
       setTimeout(showPanic, 2200 + rnd(1200));
     }
 
-    // ── the contribution graph goes wrong too ──
-    //   cells re-roll their level, turn rust, drift and spin; ghost blocks and ascii pop up on top;
-    //   now and then a whole sweep of columns flashes left to right
+    // ── the contribution graph turns into a hexdump ──
+    //   the squares are replaced by bytes (the busier the day, the bigger the byte), column by column;
+    //   then the bytes rot: bits flip, cells show ?? / FF / DE AD BE EF, and it gets worse until you refresh
     const SVGNS = 'http://www.w3.org/2000/svg';
-    let gSvg = null, gCells = [], gCols = [], gLayer = null, gAt = 0, ghosts = [];
+    const SPECIAL = ['??', 'FF', '00', '7F', 'XX', '--', 'FE', 'CA', 'BA', 'DE'];
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const hex2 = n => n.toString(16).toUpperCase().padStart(2, '0');
+    const CLEAN_FILL = ['var(--dim)', 'var(--key)', 'var(--muted)', 'var(--fg)', 'var(--accent)'];
+    let gSvg = null, gCells = [], gGrid = [];
 
-    function graphScan(svg) {
+    function graphBuild(svg) {
       gSvg = svg;
-      gAt = performance.now();
-      gCells = $$('rect[style*="--c"]', svg);                  // the day cells (the legend squares have no --c)
-      gCols = [];
-      gCells.forEach(r => {
-        const m = /--c:\s*(\d+)/.exec(r.getAttribute('style') || '');
-        const c = m ? parseInt(m[1], 10) : 0;
-        (gCols[c] = gCols[c] || []).push(r);
+      gCells = [];
+      gGrid = [];
+
+      $$('text.hx', svg).forEach(t => {                        // the bytes the graph already shows (real contribution counts)
+        const col = Number(t.getAttribute('data-col')), row = Number(t.getAttribute('data-row'));
+        const level = Number(t.getAttribute('data-l'));
+        const cell = { r: t.previousElementSibling, t, col, row, level, clean: t.getAttribute('data-clean'), on: false, bad: false };
+        t.style.visibility = 'visible';
+        gCells.push(cell);
+        (gGrid[col] = gGrid[col] || [])[row] = cell;
       });
-      gLayer = svg.querySelector('g.err-layer');
-      if (!gLayer) {
-        gLayer = document.createElementNS(SVGNS, 'g');
-        gLayer.setAttribute('class', 'err-layer');
-        svg.appendChild(gLayer);
-        ghosts = [];
+
+      const lastCol = gGrid.length - 1;
+      const convertCol = c => (gGrid[c] || []).forEach(h => {
+        if (!h) return;
+        h.on = true;
+        if (h.r) h.r.style.fill = 'transparent';               // the square disappears (it keeps its tooltip), the byte stays
+        h.t.style.fill = 'var(--err)';                         // a column flashes rust as it converts, then settles
+        setTimeout(() => { if (!h.bad) h.t.style.fill = CLEAN_FILL[h.level]; }, 260);
+      });
+      for (let c = 0; c <= lastCol; c++) {                     // left to right, one column every 45ms
+        if (reduceMotion) convertCol(c); else setTimeout(() => convertCol(c), c * 45);
       }
+
+      // the labels become offsets, like the ruler of a hexdump
+      $$('text', svg).forEach(lab => {
+        if (lab.classList.contains('hx')) return;
+        const txt = lab.textContent;
+        const swap = v => { lab.textContent = v; };
+        if (MONTH_NAMES.includes(txt)) {
+          const c = Number(lab.getAttribute('data-col')) || 0;
+          setTimeout(() => swap('0x' + hex2(c)), reduceMotion ? 0 : c * 45);
+        } else if (txt === 'Mon') setTimeout(() => swap('0x01'), 300);
+        else if (txt === 'Wed') setTimeout(() => swap('0x03'), 300);
+        else if (txt === 'Fri') setTimeout(() => swap('0x05'), 300);
+        else if (txt === 'less') setTimeout(() => swap('00'), 300);
+        else if (txt === 'more') setTimeout(() => swap('ff'), 300);
+      });
+    }
+
+    function corruptCell(h) {
+      const roll = Math.random();
+      let txt;
+      if (roll < 0.55) txt = hex2((parseInt(h.clean, 16) ^ (1 << rnd(8))) & 0xFF);   // a flipped bit
+      else if (roll < 0.8) txt = SPECIAL[rnd(SPECIAL.length)];
+      else txt = hex2(rnd(256));
+      h.t.textContent = txt;
+      h.t.style.fill = 'var(--err)';
+      h.bad = true;
+    }
+    function healCell(h) {
+      h.t.textContent = h.clean;
+      h.t.style.fill = CLEAN_FILL[h.level];
+      h.bad = false;
     }
 
     function graphTick() {
       const svg = $('.heat svg');
       if (!svg) return;                                        // graph not loaded (yet)
-      if (svg !== gSvg || performance.now() - gAt > 2000) graphScan(svg);
-      if (!gCells.length) return;
+      if (svg !== gSvg) graphBuild(svg);
+      const live = gCells.filter(h => h.on);
+      if (!live.length) return;
       const x = intensity();
 
-      for (let n = 3 + Math.floor(x * 22); n > 0; n--) {       // cells: new level, sometimes rust, sometimes drifting / spinning
-        const r = gCells[rnd(gCells.length)];
-        r.setAttribute('class', 'l' + rnd(5));
-        r.style.fill = Math.random() < 0.08 + 0.2 * x ? 'var(--err)' : '';
-        if (reduceMotion) continue;
-        if (Math.random() < 0.35) {
-          r.style.transformBox = 'fill-box';
-          r.style.transformOrigin = 'center';
-          r.style.transform = `translate(${rnd(9) - 4}px, ${rnd(9) - 4}px) rotate(${rnd(91) - 45}deg) scale(${(0.5 + Math.random() * 1.4).toFixed(2)})`;
-        } else {
-          r.style.transform = '';
-        }
-      }
-      if (reduceMotion) return;
-
-      const [, , VW, VH] = (svg.getAttribute('viewBox') || '0 0 800 140').split(/\s+/).map(Number);
-
-      if (Math.random() < 0.3 + 0.4 * x) {                     // ghost blocks appear in random places and sizes
-        const g = document.createElementNS(SVGNS, 'rect');
-        const w = [6, 11, 11, 22, 33, 55][rnd(6)], h = [6, 11, 11, 22][rnd(4)];
-        g.setAttribute('x', rnd(Math.max(1, VW - w)));
-        g.setAttribute('y', rnd(Math.max(1, VH - h)));
-        g.setAttribute('width', w);
-        g.setAttribute('height', h);
-        g.setAttribute('fill-opacity', (0.35 + Math.random() * 0.65).toFixed(2));
-        g.style.fill = Math.random() < 0.2 ? 'var(--err)' : `var(--h${1 + rnd(4)})`;
-        g.style.opacity = '1';
-        gLayer.appendChild(g);
-        ghosts.push(g);
-        while (ghosts.length > 30 + Math.floor(x * 60)) ghosts.shift().remove();
-      }
-      if (ghosts.length && Math.random() < 0.12) ghosts.splice(rnd(ghosts.length), 1)[0].remove();
-
-      if (Math.random() < 0.3 + 0.3 * x) {                     // a few ascii characters flash up over the cells
-        const c = gCells[rnd(gCells.length)];
-        const t = document.createElementNS(SVGNS, 'text');
-        let str = '';
-        for (let i = 1 + rnd(3); i > 0; i--) str += randChar();
-        t.textContent = str;
-        t.setAttribute('x', c.getAttribute('x'));
-        t.setAttribute('y', Number(c.getAttribute('y')) + 11);
-        t.style.fill = Math.random() < 0.3 ? 'var(--err)' : 'var(--fg)';
-        t.style.fontSize = (9 + rnd(14)) + 'px';
-        gLayer.appendChild(t);
-        setTimeout(() => t.remove(), 250 + rnd(650));
+      for (let n = 8 + Math.floor(x * 40); n > 0; n--) {       // bits flip; the longer you wait the more bytes are bad
+        const h = live[rnd(live.length)];
+        if (!h.bad) { if (Math.random() < 0.25 + 0.5 * x) corruptCell(h); }
+        else if (Math.random() < 0.45 - 0.35 * x) healCell(h);
+        else corruptCell(h);
       }
 
-      if (Math.random() < 0.02 + 0.03 * x) {                   // column sweep, left to right
-        gCols.forEach((cells, i) => {
-          if (!cells) return;
-          setTimeout(() => cells.forEach(r => { r.style.fill = 'var(--fg)'; }), i * 14);
-          setTimeout(() => cells.forEach(r => { r.style.fill = ''; }), i * 14 + 220);
+      if (Math.random() < 0.02 + 0.02 * x) {                   // and sometimes the classic shows up across four columns
+        const row = rnd(7), c0 = rnd(Math.max(1, gGrid.length - 3));
+        ['DE', 'AD', 'BE', 'EF'].forEach((b, i) => {
+          const h = gGrid[c0 + i] && gGrid[c0 + i][row];
+          if (h && h.on) { h.t.textContent = b; h.t.style.fill = 'var(--err)'; h.bad = true; }
         });
       }
     }
@@ -336,7 +340,7 @@
       errStart = performance.now();
       setInterval(() => { document.title = TITLES[rnd(TITLES.length)]; }, 900);
       textIv = setInterval(textTick, 80);
-      setInterval(graphTick, 70);
+      setInterval(graphTick, 90);
       scheduleBurst();
       showPanic();
     }
@@ -518,8 +522,13 @@
     }
   }
 
+  // each square shows that day's contribution count as a two-digit hex byte: 0 -> 00, 1 -> 01, 10 -> 0A, 255+ -> FF
+  const SHOW_HEX = true;                                         // false = plain squares (error mode still turns them into a hexdump)
+  const HEX_FILL = ['var(--dim)', 'var(--muted)', 'var(--fg)', 'var(--bg)', 'var(--bg)'];   // text colour per level, readable on each square
+  const hexByte = n => Math.min(255, n).toString(16).toUpperCase().padStart(2, '0');
+
   function drawGraph(box, days) {
-    const P = 14, S = 11, LEFT = 30, TOP = 16, MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const P = 16, S = 14, LEFT = 30, TOP = 16, MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const dow = s => new Date(s + 'T00:00:00Z').getUTCDay();   // Sunday = 0
     const off = dow(days[0][0]);
     const cols = Math.ceil((off + days.length) / 7);
@@ -529,21 +538,25 @@
     let cells = '', labels = '', lastMonth = -1, lastCol = -9;
     days.forEach(([date, count, level], i) => {
       const col = Math.floor((off + i) / 7), row = (off + i) % 7;
-      cells += `<rect class="l${lvl(count, level)}" style="--c:${col}" x="${LEFT + col * P}" y="${TOP + row * P}" width="${S}" height="${S}"><title>${count} contribution${count === 1 ? '' : 's'} on ${date}</title></rect>`;
+      const x = LEFT + col * P, y = TOP + row * P, lv = lvl(count, level), hx = hexByte(count);
+      cells += `<rect class="l${lv}" style="--c:${col}" x="${x}" y="${y}" width="${S}" height="${S}"><title>${count} contribution${count === 1 ? '' : 's'} on ${date}</title></rect>`;
+      cells += `<text class="hx" x="${x + S / 2}" y="${y + S / 2 + 3.2}" text-anchor="middle" data-col="${col}" data-row="${row}" data-l="${lv}" data-clean="${hx}" ` +
+               `style="fill:${HEX_FILL[lv]};font-size:9px;pointer-events:none;opacity:0;animation:cell-in 0.01s forwards;animation-delay:${col * 14}ms;visibility:${SHOW_HEX ? 'visible' : 'hidden'}">${hx}</text>`;
       const month = parseInt(date.slice(5, 7), 10) - 1;
       if (row === 0 && month !== lastMonth && col - lastCol >= 3) {
-        labels += `<text x="${LEFT + col * P}" y="10">${MONTHS[month]}</text>`;
+        labels += `<text data-col="${col}" x="${x}" y="10">${MONTHS[month]}</text>`;
         lastMonth = month; lastCol = col;
       }
     });
     [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].forEach(([r, n]) => {
-      labels += `<text x="0" y="${TOP + r * P + S - 1}">${n}</text>`;
+      labels += `<text x="0" y="${TOP + r * P + S - 3}">${n}</text>`;
     });
     let legend = `<text x="${LEFT}" y="${H - 4}">less</text>`;
-    for (let i = 0; i < 5; i++) legend += `<rect class="l${i}" style="opacity:1" x="${LEFT + 30 + i * (S + 3)}" y="${H - 13}" width="${S}" height="${S}"/>`;
+    for (let i = 0; i < 5; i++) legend += `<rect class="l${i}" style="opacity:1" x="${LEFT + 30 + i * (S + 3)}" y="${H - 15}" width="${S}" height="${S}"/>`;
     legend += `<text x="${LEFT + 30 + 5 * (S + 3) + 4}" y="${H - 4}">more</text>`;
 
-    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="github contribution graph, last year" shape-rendering="crispEdges">${labels}${cells}${legend}</svg>`;
+    box.style.minWidth = '820px';                  // keeps the bytes readable on phones (the wrapper scrolls sideways)
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="github contribution graph, last year (hex = contributions per day)" shape-rendering="crispEdges">${labels}${cells}${legend}</svg>`;
     requestAnimationFrame(() => box.classList.add('in'));
     const wrap = box.parentElement;                 // phones: start at the newest weeks
     if (wrap) wrap.scrollLeft = wrap.scrollWidth;
