@@ -9,13 +9,19 @@
     set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
   };
 
+  // editor-style mode: 'normal' | 'insert' | 'error'
+  let mode = 'normal';
+  // text nodes that error mode is corrupting right now -> their real text
+  const glitchStore = new WeakMap();
+  const origOf = node => (glitchStore.has(node) ? glitchStore.get(node).orig : node.nodeValue);
+
   document.addEventListener('DOMContentLoaded', () => {
     ensureCursor();          // every page
     initWipe();              // triangle wipe on .project hover (every page)
     if (document.body.classList.contains('home')) {
       initClock();
       initBoot();
-      initKeys();
+      initModes();
       initStars();
       initStats();
     }
@@ -70,43 +76,356 @@
     timer = setTimeout(next, 200);
   }
 
-  // ── keyboard: j/k to move, enter to open ───────────────
-  function initKeys() {
-    const projs = $$('.project');
-    if (!projs.length) return;
-    let idx = -1;
+  // ── modes: NORMAL / INSERT / ERROR ─────────────────────
+  //   i = insert   esc = back to normal   ctrl+x = error (no way out: refresh the page)
+  //   normal + error: j/k/h/l scroll the page, gg / G jump to top / bottom
+  //   insert: every key types (hjkl included); nothing is saved, refresh resets it
+  function initModes() {
+    const body   = document.body;
+    const bar    = $('.statusbar');
+    const label  = bar && $('.mode', bar);
+    const pathEl = bar && $('.path', bar);
+    const keysEl = bar && $('.keys', bar);
+    const BASE_PATH = pathEl ? pathEl.textContent : '';
+    const HINT = { normal: 'j/k scroll · i insert · ctrl+x error', insert: 'esc normal · ctrl+x error', error: '' };
+    const rnd = n => Math.floor(Math.random() * n);
+    let dirty = false, mx = -1, my = -1;
 
-    const clear = () => {
-      if (idx >= 0) {
-        projs[idx].classList.remove('sel');
-        if (projs[idx].wipeOut) projs[idx].wipeOut();
+    function paint() {
+      body.dataset.mode = mode;
+      if (label) label.textContent = mode.toUpperCase();
+      if (pathEl) pathEl.textContent = BASE_PATH + (dirty ? ' [+]' : '') + (mode === 'error' ? ' [!]' : '');
+      if (keysEl && mode !== 'error') keysEl.textContent = HINT[mode];
+    }
+
+    function setMode(next) {
+      if (next === mode) return;
+      if (mode === 'insert') stopEdit();
+      mode = next;
+      if (next === 'insert') startEdit();
+      if (next === 'error')  startError();
+      paint();
+    }
+
+    // ── insert: the text on the page becomes editable ──
+    const EDITABLE = '.lnk, .name, .bio, .section-head, .chip, .proj-name, .proj-desc, .footer span, .rows .k';
+    let editing = [];
+
+    function caretToEnd(el) {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      r.collapse(false);
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+    }
+    function startEdit() {
+      $$('.project').forEach(p => { if (p.wipeOut) p.wipeOut(); });
+      editing = $$(EDITABLE);
+      editing.forEach(el => {
+        el.setAttribute('contenteditable', 'plaintext-only');
+        if (!el.isContentEditable) el.setAttribute('contenteditable', 'true');   // browsers without plaintext-only
+        el.setAttribute('spellcheck', 'false');
+        $$('p', el).forEach(p => p.setAttribute('contenteditable', 'false'));    // keep the chip icons intact
+      });
+      // the caret starts under the mouse, like vim's cursor (falls back to the name)
+      const hit = (mx >= 0 && document.elementFromPoint) ? document.elementFromPoint(mx, my) : null;
+      const target = (hit && hit.closest(EDITABLE)) || $('.name');
+      if (target) { target.focus(); caretToEnd(target); }
+    }
+    function stopEdit() {
+      editing.forEach(el => {
+        el.removeAttribute('contenteditable');
+        el.removeAttribute('spellcheck');
+        $$('p', el).forEach(p => p.removeAttribute('contenteditable'));
+      });
+      editing = [];
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      const s = getSelection();
+      if (s) s.removeAllRanges();
+    }
+
+    // ── error: random ascii keeps popping into the text, and keeps changing, until you refresh ──
+    const ASCII = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';
+    const randChar = () => ASCII[rnd(ASCII.length)];
+    const PANIC = [
+      'Segmentation fault (core dumped)',
+      'BUG: unable to handle page fault at 0xdeadbeef',
+      'EXT4-fs error: bad block bitmap checksum',
+      'Out of memory: killed process 1402 (atif)',
+      'kernel panic - not syncing: VFS: unable to mount root fs',
+      'general protection fault, probably for non-canonical address',
+      'inode 1402: orphan list corrupted',
+      'journal commit I/O error',
+    ];
+    const TITLES = ['kernel panic', 'segfault', 'atif@an0m', 'atif@anom', 'EXT4-fs error'];
+    let errStart = 0, textIv = null, panicIv = null, burstIv = null;
+    let nodeCache = [], nodeCacheAt = 0;
+    const intensity = () => Math.min(1, (performance.now() - errStart) / 25000);   // worst after ~25s
+
+    function textNodes() {
+      const out = [];
+      const root = $('.page');
+      if (!root) return out;
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(n) {
+          const p = n.parentElement;
+          if (!p || p.closest('svg, script, style, .statusbar, .heat-wrap, .ago')) return NodeFilter.FILTER_REJECT;
+          return n.nodeValue.trim().length >= 2 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        },
+      });
+      while (w.nextNode()) out.push(w.currentNode);
+      return out;
+    }
+    function pickNodes(k) {
+      const now = performance.now();
+      if (now - nodeCacheAt > 1000) { nodeCache = textNodes(); nodeCacheAt = now; }   // also picks up late-loaded stats
+      const live = nodeCache.filter(n => n.isConnected && !n.parentElement.closest('.project:hover'));
+      const seen = live.filter(n => { const r = n.parentElement.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      const pool = (seen.length && Math.random() < 0.8 ? seen : live).slice();
+      const out = [];
+      while (out.length < k && pool.length) out.push(pool.splice(rnd(pool.length), 1)[0]);
+      return out;
+    }
+
+    // every text node keeps a set of corrupted positions; the characters there are re-rolled again and again
+    function mutate(node, density) {
+      let st = glitchStore.get(node);
+      if (!st) {
+        const chars = Array.from(node.nodeValue);
+        const idx = [];
+        chars.forEach((c, i) => { if (!/\s/.test(c)) idx.push(i); });
+        st = { orig: node.nodeValue, chars, idx, bad: new Map() };
+        glitchStore.set(node, st);
       }
-    };
-    const select = n => {
-      clear();
-      idx = (n + projs.length) % projs.length;
-      const p = projs[idx];
-      p.classList.add('sel');
-      if (p.wipeIn) p.wipeIn();
-      if (p.scrollIntoView) p.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
-    };
+      if (!st.idx.length) return;
+      const want = Math.round(st.idx.length * density);
+      const addOne = () => { st.bad.set(st.idx[rnd(st.idx.length)], randChar()); };
+      const dropOne = () => { const keys = Array.from(st.bad.keys()); st.bad.delete(keys[rnd(keys.length)]); };
+      while (st.bad.size < want) addOne();
+      while (st.bad.size > want) dropOne();
+      for (let c = Math.max(1, Math.round(want * 0.25)); c > 0 && st.bad.size; c--) { dropOne(); addOne(); }   // characters pop in and out
+      st.bad.forEach((_, i) => { if (Math.random() < 0.6) st.bad.set(i, randChar()); });                      // and keep changing
+      node.nodeValue = st.chars.map((c, i) => (st.bad.has(i) ? st.bad.get(i) : c)).join('');
+    }
+    function textTick() {
+      const x = intensity();
+      pickNodes(6 + Math.floor(x * 10)).forEach(n => mutate(n, 0.08 + 0.37 * x));
+    }
 
-    projs.forEach((p, n) => p.addEventListener('mouseenter', () => {
-      if (idx >= 0 && idx !== n) { projs[idx].classList.remove('sel'); if (projs[idx].wipeOut) projs[idx].wipeOut(); }
-      idx = n;
-    }));
+    function burst() {                                         // the whole window jitters for a moment
+      const page = $('.page');
+      if (!page || reduceMotion) return;
+      clearInterval(burstIv);
+      let f = 0;
+      burstIv = setInterval(() => {
+        if (f++ >= 5) { clearInterval(burstIv); burstIv = null; page.style.transform = ''; page.classList.remove('glitching'); return; }
+        page.classList.add('glitching');
+        page.style.transform = `translate(${rnd(7) - 3}px, ${rnd(3) - 1}px) skewX(${((Math.random() * 2 - 1) * 1.6).toFixed(2)}deg)`;
+      }, 45);
+    }
+    function scheduleBurst() {
+      setTimeout(() => { if (Math.random() < 0.5) burst(); scheduleBurst(); }, 700 + rnd(1400));
+    }
+
+    function showPanic() {                                     // kernel errors type themselves into the status bar
+      if (!keysEl) return;
+      const msg = PANIC[rnd(PANIC.length)];
+      let f = 0;
+      clearInterval(panicIv);
+      panicIv = setInterval(() => {
+        f++;
+        const keep = Math.min(msg.length, f * 3);
+        let noise = '';
+        for (let i = 0; i < Math.min(6, msg.length - keep); i++) noise += randChar();
+        keysEl.textContent = msg.slice(0, keep) + noise;
+        if (keep >= msg.length) { clearInterval(panicIv); panicIv = null; keysEl.textContent = msg; }
+      }, 40);
+      setTimeout(showPanic, 2200 + rnd(1200));
+    }
+
+    // ── the contribution graph goes wrong too ──
+    //   cells re-roll their level, turn rust, drift and spin; ghost blocks and ascii pop up on top;
+    //   now and then a whole sweep of columns flashes left to right
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    let gSvg = null, gCells = [], gCols = [], gLayer = null, gAt = 0, ghosts = [];
+
+    function graphScan(svg) {
+      gSvg = svg;
+      gAt = performance.now();
+      gCells = $$('rect[style*="--c"]', svg);                  // the day cells (the legend squares have no --c)
+      gCols = [];
+      gCells.forEach(r => {
+        const m = /--c:\s*(\d+)/.exec(r.getAttribute('style') || '');
+        const c = m ? parseInt(m[1], 10) : 0;
+        (gCols[c] = gCols[c] || []).push(r);
+      });
+      gLayer = svg.querySelector('g.err-layer');
+      if (!gLayer) {
+        gLayer = document.createElementNS(SVGNS, 'g');
+        gLayer.setAttribute('class', 'err-layer');
+        svg.appendChild(gLayer);
+        ghosts = [];
+      }
+    }
+
+    function graphTick() {
+      const svg = $('.heat svg');
+      if (!svg) return;                                        // graph not loaded (yet)
+      if (svg !== gSvg || performance.now() - gAt > 2000) graphScan(svg);
+      if (!gCells.length) return;
+      const x = intensity();
+
+      for (let n = 3 + Math.floor(x * 22); n > 0; n--) {       // cells: new level, sometimes rust, sometimes drifting / spinning
+        const r = gCells[rnd(gCells.length)];
+        r.setAttribute('class', 'l' + rnd(5));
+        r.style.fill = Math.random() < 0.08 + 0.2 * x ? 'var(--err)' : '';
+        if (reduceMotion) continue;
+        if (Math.random() < 0.35) {
+          r.style.transformBox = 'fill-box';
+          r.style.transformOrigin = 'center';
+          r.style.transform = `translate(${rnd(9) - 4}px, ${rnd(9) - 4}px) rotate(${rnd(91) - 45}deg) scale(${(0.5 + Math.random() * 1.4).toFixed(2)})`;
+        } else {
+          r.style.transform = '';
+        }
+      }
+      if (reduceMotion) return;
+
+      const [, , VW, VH] = (svg.getAttribute('viewBox') || '0 0 800 140').split(/\s+/).map(Number);
+
+      if (Math.random() < 0.3 + 0.4 * x) {                     // ghost blocks appear in random places and sizes
+        const g = document.createElementNS(SVGNS, 'rect');
+        const w = [6, 11, 11, 22, 33, 55][rnd(6)], h = [6, 11, 11, 22][rnd(4)];
+        g.setAttribute('x', rnd(Math.max(1, VW - w)));
+        g.setAttribute('y', rnd(Math.max(1, VH - h)));
+        g.setAttribute('width', w);
+        g.setAttribute('height', h);
+        g.setAttribute('fill-opacity', (0.35 + Math.random() * 0.65).toFixed(2));
+        g.style.fill = Math.random() < 0.2 ? 'var(--err)' : `var(--h${1 + rnd(4)})`;
+        g.style.opacity = '1';
+        gLayer.appendChild(g);
+        ghosts.push(g);
+        while (ghosts.length > 30 + Math.floor(x * 60)) ghosts.shift().remove();
+      }
+      if (ghosts.length && Math.random() < 0.12) ghosts.splice(rnd(ghosts.length), 1)[0].remove();
+
+      if (Math.random() < 0.3 + 0.3 * x) {                     // a few ascii characters flash up over the cells
+        const c = gCells[rnd(gCells.length)];
+        const t = document.createElementNS(SVGNS, 'text');
+        let str = '';
+        for (let i = 1 + rnd(3); i > 0; i--) str += randChar();
+        t.textContent = str;
+        t.setAttribute('x', c.getAttribute('x'));
+        t.setAttribute('y', Number(c.getAttribute('y')) + 11);
+        t.style.fill = Math.random() < 0.3 ? 'var(--err)' : 'var(--fg)';
+        t.style.fontSize = (9 + rnd(14)) + 'px';
+        gLayer.appendChild(t);
+        setTimeout(() => t.remove(), 250 + rnd(650));
+      }
+
+      if (Math.random() < 0.02 + 0.03 * x) {                   // column sweep, left to right
+        gCols.forEach((cells, i) => {
+          if (!cells) return;
+          setTimeout(() => cells.forEach(r => { r.style.fill = 'var(--fg)'; }), i * 14);
+          setTimeout(() => cells.forEach(r => { r.style.fill = ''; }), i * 14 + 220);
+        });
+      }
+    }
+
+    function startError() {                                    // there is no stopError: refresh the page to get the site back
+      errStart = performance.now();
+      setInterval(() => { document.title = TITLES[rnd(TITLES.length)]; }, 900);
+      textIv = setInterval(textTick, 80);
+      setInterval(graphTick, 70);
+      scheduleBurst();
+      showPanic();
+    }
+
+    // ── normal + error: vim-style scrolling (hold the key to keep going) ──
+    const DIR = { j: [0, 1], k: [0, -1], h: [-1, 0], l: [1, 0] };
+    const STEP = 40, SPEED = 0.9;                              // px per tap, px per ms while held
+    const held = new Set(), holdTimers = {};
+    let loopRaf = null, lastT = 0, gTimer = null;
+
+    const jump = (x, y) => scrollBy({ left: x, top: y, behavior: 'instant' });
+    function loop(t) {
+      const dt = Math.min(48, t - (lastT || t));
+      lastT = t;
+      let dx = 0, dy = 0;
+      held.forEach(k => { dx += DIR[k][0]; dy += DIR[k][1]; });
+      if (dx || dy) jump(dx * SPEED * dt, dy * SPEED * dt);
+      loopRaf = held.size ? requestAnimationFrame(loop) : null;
+      if (!held.size) lastT = 0;
+    }
+    function pressScroll(k) {
+      jump(DIR[k][0] * STEP, DIR[k][1] * STEP);
+      clearTimeout(holdTimers[k]);
+      holdTimers[k] = setTimeout(() => {
+        held.add(k);
+        if (!loopRaf) loopRaf = requestAnimationFrame(loop);
+      }, 160);
+    }
+    function releaseScroll(k) {
+      clearTimeout(holdTimers[k]);
+      held.delete(k);
+    }
+
+    // ── keys ──
+    addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
     addEventListener('keydown', e => {
+      // ctrl+x: error mode (in insert it still cuts when text is selected)
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && e.key.toLowerCase() === 'x') {
+        if (mode === 'error') { e.preventDefault(); return; }
+        if (mode === 'insert') {
+          const sel = getSelection();
+          if (sel && !sel.isCollapsed) return;                 // let the normal cut happen
+        }
+        e.preventDefault();
+        setMode('error');
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (mode === 'insert') {
+        if (e.key === 'Escape') { e.preventDefault(); setMode('normal'); }
+        else if (e.key === 'Enter') e.preventDefault();        // no line breaks inside headings and chips
+        return;                                                // everything else types normally
+      }
+
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (e.key === 'j') select(idx + 1);
-      else if (e.key === 'k') select(idx < 0 ? projs.length - 1 : idx - 1);
-      else if (e.key === 'Escape') { clear(); idx = -1; }
-      else if (e.key === 'Enter' && idx >= 0 && !(t && t.closest && t.closest('a'))) projs[idx].click();
-    });
-  }
 
+      if (DIR[e.key]) {
+        e.preventDefault();
+        if (!e.repeat) pressScroll(e.key);
+      } else if (e.key === 'g') {
+        if (gTimer) { clearTimeout(gTimer); gTimer = null; scrollTo({ top: 0, behavior: 'smooth' }); }
+        else gTimer = setTimeout(() => { gTimer = null; }, 500);
+      } else if (e.key === 'G') {
+        scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      } else if ((e.key === 'i' || e.key === 'I') && mode === 'normal') {   // error mode has no way back
+        e.preventDefault();
+        setMode('insert');
+      }
+    });
+    addEventListener('keyup', e => { if (DIR[e.key]) releaseScroll(e.key); });
+    addEventListener('blur', () => Object.keys(DIR).forEach(releaseScroll));
+
+    // insert mode: links must not navigate while you edit, pasted text stays plain, edits mark the file [+]
+    document.addEventListener('click', e => {
+      if (mode === 'insert' && e.target.closest && e.target.closest('a')) e.preventDefault();
+    }, true);
+    addEventListener('paste', e => {
+      if (mode !== 'insert') return;
+      e.preventDefault();
+      const text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\s+/g, ' ');
+      document.execCommand('insertText', false, text);
+    });
+    addEventListener('input', () => { if (mode === 'insert') { dirty = true; paint(); } });
+
+    paint();
+  }
   // ── helpers for live data (cached in sessionStorage) ───
   async function cached(key, ttl, loader) {
     try {
@@ -292,8 +611,8 @@
 
       const icon = $('.proj-icon', proj);
       const name = $('.proj-name', proj);
-      const iconText = icon ? icon.textContent : '';
-      const nameText = name ? name.textContent : '';
+      const textOf = el => (el && el.firstChild && el.firstChild.nodeType === 3 ? el.firstChild : null);
+      let iconOrig = '', nameOrig = '', engaged = false;
       let raf = null, scr = null;
 
       const stop = () => {
@@ -318,24 +637,30 @@
 
       // name resolves left to right out of noise
       function decode() {
-        if (!name || nameText.length < 2) return;
-        const n = nameText.length, frames = 9;
+        const nt = textOf(name);
+        if (!nt || nameOrig.length < 2) return;
+        const n = nameOrig.length, frames = 9;
         let f = 0;
         scr = setInterval(() => {
           f++;
           const keep = Math.floor(n * f / frames);
-          let out = nameText.slice(0, keep);
+          let out = nameOrig.slice(0, keep);
           for (let i = keep; i < n; i++) {
-            out += nameText[i] === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+            out += nameOrig[i] === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
           }
-          name.textContent = out;
-          if (f >= frames) { clearInterval(scr); scr = null; name.textContent = nameText; }
+          nt.nodeValue = out;
+          if (f >= frames) { clearInterval(scr); scr = null; nt.nodeValue = nameOrig; }
         }, 28);
       }
 
       function wipeIn() {
+        if (mode === 'insert') return;            // editing: leave the text alone
         stop();
-        if (icon) { icon.textContent = '>'; icon.style.color = ACCENT; }
+        const nt = textOf(name), it = textOf(icon);
+        nameOrig = nt ? origOf(nt) : '';
+        iconOrig = it ? origOf(it) : '';
+        engaged = true;
+        if (it) { it.nodeValue = '>'; icon.style.color = ACCENT; }
         if (reduceMotion) { bar.style.width = '100%'; return; }
         bar.style.width = '0px';
         fillTo(1, 240);
@@ -343,8 +668,12 @@
       }
       function wipeOut() {
         stop();
-        if (name) name.textContent = nameText;
-        if (icon) { icon.textContent = iconText; icon.style.color = ''; }
+        if (engaged) {                            // only undo what wipeIn actually changed
+          const nt = textOf(name), it = textOf(icon);
+          if (nt) nt.nodeValue = nameOrig;
+          if (it) { it.nodeValue = iconOrig; icon.style.color = ''; }
+          engaged = false;
+        }
         if (reduceMotion) { bar.style.width = '0px'; return; }
         fillTo(0, 120);
       }

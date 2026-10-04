@@ -386,7 +386,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; animation-delay: 0s !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; }
 }
 
 /* personal/style.css — timeline page */
@@ -804,3 +804,37 @@ body {
 
 /* if the script ever dies, show every entry after 8s */
 .journey .tl-entry:not(.visible) { animation: boot-failsafe 0.01s 8s forwards; }
+
+
+/* ════════════════════════════════════════════════════════
+   editor modes: NORMAL / INSERT / ERROR  (logic in pxam.js)
+   ════════════════════════════════════════════════════════ */
+
+:root { --err: #b5654f; }   /* error mode accent; change it to taste */
+
+.statusbar .mode { min-width: 9ch; justify-content: center; }
+body[data-mode="insert"] .statusbar .mode { background: var(--accent); }
+body[data-mode="error"]  .statusbar .mode { background: var(--err); animation: blink 1s step-end infinite; }
+body[data-mode="error"]  .statusbar .path,
+body[data-mode="error"]  .statusbar .keys { color: var(--err); }
+
+/* insert: everything you can edit gets a dashed outline, the focused one a solid one */
+body[data-mode="insert"] [contenteditable] {
+  outline: 1px dashed var(--dim);
+  outline-offset: 3px;
+  caret-color: var(--accent);
+  cursor: text;
+}
+body[data-mode="insert"] [contenteditable]:hover { outline-color: var(--key); }
+body[data-mode="insert"] [contenteditable]:focus { outline: 1px solid var(--accent); }
+body[data-mode="insert"] ::selection { background: var(--accent); color: var(--bg); }
+
+/* error: the scanlines flicker, and the text splits while the page jitters */
+body[data-mode="error"] .page::before { animation: crt-flicker 0.14s steps(2) infinite; }
+@keyframes crt-flicker {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.55; }
+  100% { opacity: 0.9; }
+}
+.page.glitching,
+.page.glitching * { text-shadow: 1.5px 0 var(--err), -1.5px 0 rgba(130, 170, 185, 0.7); }
